@@ -35,10 +35,11 @@ export default function Login() {
           <span className="text-yellow">TOMORROW</span>
         </h1>
         <div className="hero-divider"></div>
+        
         <p>
           AI-POWERED<br />
-          LOAD MONITORING<br />
-          FOR A SAFER TOMORROW
+          OVER HAUL PREDICTION<br />
+          
         </p>
       </div>
 
@@ -47,7 +48,7 @@ export default function Login() {
         <div className="login-card glass-panel">
           <div className="login-header">
             <div className="login-logo">
-              <span className="truck-icon">🚚</span> Truck<span className="brand-highlight">Vision</span>
+              <span className="truck-icon">🪨</span> Truck<span className="brand-highlight">Vision</span>
             </div>
             <p className="login-subtitle">AI-POWERED OVERLOAD DETECTION</p>
           </div>
@@ -83,7 +84,7 @@ export default function Login() {
 
           <div className="login-footer">
             <p>Secure access managed by Supabase Auth.</p>
-            <p>Remember to enable Google Provider in your Supabase Dashboard.</p>
+            
           </div>
         </div>
       </div>
