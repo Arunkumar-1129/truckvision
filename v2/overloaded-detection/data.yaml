@@ -1,0 +1,13 @@
+names:
+- notoverloaded
+- overloaded
+nc: 2
+roboflow:
+  license: CC BY 4.0
+  project: overloaded-detection
+  url: https://universe.roboflow.com/overloaded-vehicle/overloaded-detection/dataset/1
+  version: 1
+  workspace: overloaded-vehicle
+test: ../test/images
+train: ../train/images
+val: ../valid/images

@@ -1,0 +1,8 @@
+names:
+- overloaded_truck
+- normal_truck
+nc: 2
+path: D:\truckmodel\v2\merged_dataset
+test: test/images
+train: train/images
+val: valid/images

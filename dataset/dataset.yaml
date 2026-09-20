@@ -1,0 +1,7 @@
+path: d:/truckmodel/dataset
+train: images/train
+val: images/train
+
+names:
+  0: normal_truck
+  1: overloaded_truck

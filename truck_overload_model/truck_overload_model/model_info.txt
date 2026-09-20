@@ -1,0 +1,6 @@
+Model: yolov8n
+Epochs: 100
+Image Size: 640
+Classes: ['goods', 'truck']
+mAP@0.5: 0.8491
+mAP@0.5:0.95: 0.6549

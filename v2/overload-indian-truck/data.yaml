@@ -1,0 +1,13 @@
+names:
+- goods
+- truck
+nc: 2
+roboflow:
+  license: CC BY 4.0
+  project: overload-indian-truck
+  url: https://universe.roboflow.com/sam-lm8mn/overload-indian-truck/dataset/1
+  version: 1
+  workspace: sam-lm8mn
+test: ../test/images
+train: ../train/images
+val: ../valid/images
