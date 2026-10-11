@@ -38,3 +38,8 @@ tmp/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Executables & test outputs
+*.exe
+predicted_*
+detection_log.csv
