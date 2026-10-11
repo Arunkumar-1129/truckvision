@@ -189,9 +189,8 @@ body {
 
 /* ── Main Content ────────────────────────────────────────────── */
 .main {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 28px 24px;
+  width: 100%;
+  padding: 28px 28px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -210,8 +209,9 @@ body {
 /* ── Stats Row ───────────────────────────────────────────────── */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
+  width: 100%;
 }
 
 .stat-card {

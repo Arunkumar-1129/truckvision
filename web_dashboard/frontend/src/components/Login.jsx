@@ -30,15 +30,15 @@ export default function Login() {
       {/* Left Typography Section */}
       <div className="login-hero-text">
         <h1>
-          <span className="text-blue">SAFER</span> MINES<br />
-          <span className="text-white">SMARTER</span><br />
-          <span className="text-yellow">TOMORROW</span>
+          <span className="text-blue">SMART</span> LOADS<br />
+          <span className="text-white">SAFER</span>
+          <span className="text-yellow"> HAULS</span>
         </h1>
         <div className="hero-divider"></div>
         
         <p>
-          AI-POWERED<br />
-          OVER HAUL PREDICTION<br />
+          AI-POWERED OVER HAUL  PREDICTION<br /><br />
+          
           
         </p>
       </div>
