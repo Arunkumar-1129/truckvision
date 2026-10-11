@@ -9,7 +9,7 @@
 const { spawn } = require("child_process");
 const path = require("path");
 
-const PYTHON      = process.env.PYTHON_PATH || "python";
+const PYTHON      = process.env.PYTHON_PATH || (process.platform === "win32" ? "python" : "python3");
 const INFER_SCRIPT = path.join(__dirname, "yolo_infer.py");
 
 /**

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "build": "pip install -r requirements.txt || pip3 install -r requirements.txt || true",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

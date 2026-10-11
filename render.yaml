@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: truckvision-backend
+    runtime: docker
+    dockerfilePath: ./web_dashboard/backend/Dockerfile
+    dockerContext: ./web_dashboard/backend
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: truck-images
+      - key: POLL_INTERVAL_MS
+        value: 5000
+      - key: ROBOFLOW_API_KEY
+        sync: false

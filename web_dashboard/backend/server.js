@@ -182,6 +182,16 @@ const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.json({
+    service: "TruckVision Backend API",
+    status: "online",
+    healthCheck: "/health",
+    stream: "/api/stream",
+    bucket: BUCKET,
+  });
+});
+
 app.get("/health", (req, res) => {
   res.json({
     status:          "ok",

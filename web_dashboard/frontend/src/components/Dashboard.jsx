@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 
-const API_BASE = "http://localhost:3001";
+const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/+$/, "");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getClassKey(classification) {
@@ -559,7 +559,7 @@ export default function Dashboard({ session, supabase }) {
                       <div className="empty-state">
                         <div className="empty-icon">📡</div>
                         <div className="empty-title">{connected ? "Waiting for ESP32 Image…" : "Connecting to server…"}</div>
-                        <div className="empty-desc">{connected ? "The system will automatically detect new images uploaded to your Supabase truck-images bucket." : "Please ensure the backend server is running on port 3001."}</div>
+                        <div className="empty-desc">{connected ? "The system will automatically detect new images uploaded to your Supabase truck-images bucket." : "Please ensure the backend server is running and reachable."}</div>
                         {connected && <div className="spinner" />}
                       </div>
                     )}
@@ -659,7 +659,7 @@ export default function Dashboard({ session, supabase }) {
 
                 {!connected && (
                   <p style={{ marginTop: 16, fontSize: 12, color: "#ef4444" }}>
-                    ⚠️ Backend disconnected. Please ensure the server is running on port 3001.
+                    ⚠️ Backend disconnected. Please ensure the backend server is running and reachable.
                   </p>
                 )}
               </div>
