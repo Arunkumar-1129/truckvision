@@ -245,9 +245,9 @@ function DetectionLogs({ history }) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Filter bar */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div className="logs-filter-bar">
         {["all", "mining-truck", "empty-load", "full-load", "overloaded"].map(f => (
           <button key={f} onClick={() => setFilter(f)}
             style={{
@@ -267,8 +267,8 @@ function DetectionLogs({ history }) {
       </div>
 
       {/* Log Table */}
-      <div className="glass-panel" style={{ overflow: "hidden", borderRadius: 12 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+      <div className="glass-panel logs-table-wrap">
+        <table>
           <thead>
             <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
               {["#", "Timestamp", "Filename", "Classification", "Confidence", "Raw Class"].map(h => (
@@ -304,6 +304,7 @@ function DetectionLogs({ history }) {
           </tbody>
         </table>
       </div>
+      {filtered.length > 0 && <div className="table-mobile-hint">← Swipe horizontally to view full table →</div>}
     </div>
   );
 }
@@ -336,6 +337,7 @@ function NavItem({ icon, label, id, active, onClick }) {
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard({ session, supabase }) {
   const [activeTab, setActiveTab]         = useState("monitor");
+  const [sidebarOpen, setSidebarOpen]     = useState(false);
   const [status, setStatus]               = useState({ isPolling: false, pollingError: null, totalDetections: 0 });
   const [latest, setLatest]               = useState(null);
   const [history, setHistory]             = useState([]);
@@ -415,16 +417,14 @@ export default function Dashboard({ session, supabase }) {
   ];
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-primary)" }}>
+    <div className="dashboard-layout">
+      {/* Mobile Backdrop */}
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
 
       {/* ── Sidebar ── */}
-      <aside style={{
-        width: 240, height: "100vh", display: "flex", flexDirection: "column",
-        background: "var(--bg-secondary)", borderRight: "1px solid var(--border-subtle)",
-        position: "fixed", top: 0, left: 0, zIndex: 100, overflowY: "auto", flexShrink: 0,
-      }}>
-        {/* Logo */}
-        <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid var(--border-subtle)" }}>
+      <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        {/* Logo Header */}
+        <div className="sidebar-header">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 40, height: 40, background: "linear-gradient(135deg, #eab308, #d97706)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🚛</div>
             <div>
@@ -432,12 +432,13 @@ export default function Dashboard({ session, supabase }) {
               <div style={{ fontSize: 10, color: "#94a3b8", letterSpacing: 1, textTransform: "uppercase" }}>OVER HAUL PREDICTION</div>
             </div>
           </div>
+          <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">✕</button>
         </div>
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
           {navItems.map(item => (
-            <NavItem key={item.id} {...item} active={activeTab === item.id} onClick={setActiveTab} />
+            <NavItem key={item.id} {...item} active={activeTab === item.id} onClick={(tabId) => { setActiveTab(tabId); setSidebarOpen(false); }} />
           ))}
         </nav>
 
@@ -467,24 +468,27 @@ export default function Dashboard({ session, supabase }) {
       </aside>
 
       {/* ── Main Content ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "auto", marginLeft: 240 }}>
+      <div className="dashboard-main-area">
         {/* Topbar */}
-        <header style={{ borderBottom: "1px solid var(--border-subtle)", padding: "0 28px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-secondary)", position: "sticky", top: 0, zIndex: 10 }}>
-          <div>
-            <h1 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: 0 }}>
+        <header className="topbar">
+          <div className="topbar-left">
+            <button className="menu-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle navigation menu">
+              ☰
+            </button>
+            <h1 className="topbar-title">
               {navItems.find(n => n.id === activeTab)?.icon} {navItems.find(n => n.id === activeTab)?.label}
             </h1>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {activeTab !== "scan" && (
-              <button id="btn-manual-trigger" className="btn-trigger" onClick={() => { setActiveTab("scan"); }} disabled={!connected}>
+              <button id="btn-manual-trigger" className="btn-trigger" onClick={() => { setActiveTab("scan"); setSidebarOpen(false); }} disabled={!connected}>
                 ⚡ Force Scan
               </button>
             )}
           </div>
         </header>
 
-        <main className="main" style={{ padding: 28 }}>
+        <main className="main">
 
           {/* ── DASHBOARD TAB ── */}
           {activeTab === "dashboard" && (
@@ -499,17 +503,17 @@ export default function Dashboard({ session, supabase }) {
 
               {/* Recent snapshot */}
               {latest && (
-                <div className="glass-panel" style={{ display: "flex", gap: 24, padding: 24, alignItems: "center", borderRadius: 16 }}>
+                <div className="recent-snapshot-card glass-panel">
                   {latest.imageUrl && (
-                    <img src={latest.imageUrl} alt="latest" style={{ width: 200, height: 130, objectFit: "cover", borderRadius: 10, border: "1px solid var(--border-subtle)" }} />
+                    <img src={latest.imageUrl} alt="latest" className="recent-snapshot-img" />
                   )}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>Latest Detection</div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 4 }}>{getClassIcon(latest.classification)} {latest.classification}</div>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{latest.filename}</div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{formatDateTime(latest.timestamp)}</div>
+                  <div className="recent-snapshot-info">
+                    <div className="recent-snapshot-badge">Latest Detection</div>
+                    <div className="recent-snapshot-title">{getClassIcon(latest.classification)} {latest.classification}</div>
+                    <div className="recent-snapshot-filename">{latest.filename}</div>
+                    <div className="recent-snapshot-time">{formatDateTime(latest.timestamp)}</div>
                   </div>
-                  <button className="btn-trigger" onClick={() => setActiveTab("monitor")}>View Live →</button>
+                  <button className="btn-trigger recent-snapshot-btn" onClick={() => setActiveTab("monitor")}>View Live →</button>
                 </div>
               )}
             </>
@@ -622,17 +626,17 @@ export default function Dashboard({ session, supabase }) {
 
           {/* ── FORCE SCAN TAB ── */}
           {activeTab === "scan" && (
-            <div style={{ maxWidth: 600, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24, paddingTop: 40 }}>
-              <div className="glass-panel" style={{ borderRadius: 20, padding: "48px 40px", textAlign: "center" }}>
-                <div style={{ fontSize: 60, marginBottom: 20 }}>⚡</div>
-                <h2 style={{ fontSize: 26, fontWeight: 800, color: "#fff", marginBottom: 10 }}>Force Scan</h2>
-                <p style={{ color: "var(--text-muted)", fontSize: 14, lineHeight: 1.6, marginBottom: 32 }}>
+            <div className="scan-tab-container">
+              <div className="glass-panel scan-card">
+                <div style={{ fontSize: 60, marginBottom: 16 }}>⚡</div>
+                <h2 style={{ fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 10 }}>Force Scan</h2>
+                <p style={{ color: "var(--text-muted)", fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>
                   Manually trigger the AI detection pipeline to scan the latest image in your Supabase bucket.
                 </p>
 
                 {triggerMsg && (
                   <div style={{
-                    marginBottom: 24, padding: "12px 20px", borderRadius: 10,
+                    marginBottom: 20, padding: "12px 16px", borderRadius: 10,
                     background: triggerMsg.type === "success" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
                     border: `1px solid ${triggerMsg.type === "success" ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)"}`,
                     color: triggerMsg.type === "success" ? "#6ee7b7" : "#fca5a5",
@@ -644,11 +648,12 @@ export default function Dashboard({ session, supabase }) {
 
                 <button
                   id="btn-force-scan"
+                  className="scan-btn-submit"
                   onClick={handleTrigger}
                   disabled={triggering || !connected}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 10,
-                    padding: "16px 40px", borderRadius: 12, border: "none",
+                    padding: "16px 36px", borderRadius: 12, border: "none",
                     background: triggering ? "rgba(234,179,8,0.3)" : "linear-gradient(135deg, #eab308, #d97706)",
                     color: "#000", fontWeight: 800, fontSize: 16, cursor: triggering || !connected ? "not-allowed" : "pointer",
                     transition: "all 0.2s", opacity: !connected ? 0.5 : 1,
@@ -665,7 +670,7 @@ export default function Dashboard({ session, supabase }) {
               </div>
 
               {/* Status card */}
-              <div className="glass-panel" style={{ borderRadius: 16, padding: 24 }}>
+              <div className="glass-panel" style={{ borderRadius: 16, padding: 20 }}>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 14, fontWeight: 700 }}>System Status</div>
                 <div className="meta-row"><span className="meta-key">Backend Connection</span><span className="meta-val" style={{ color: connected ? "#10b981" : "#ef4444" }}>{connected ? "✅ Connected" : "❌ Disconnected"}</span></div>
                 <div className="meta-row"><span className="meta-key">Polling Active</span><span className="meta-val" style={{ color: status.isPolling ? "#10b981" : "#94a3b8" }}>{status.isPolling ? "✅ Yes" : "—"}</span></div>
