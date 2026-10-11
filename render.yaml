@@ -1,9 +1,10 @@
 services:
   - type: web
     name: truckvision-backend
-    runtime: docker
-    dockerfilePath: ./web_dashboard/backend/Dockerfile
-    dockerContext: ./web_dashboard/backend
+    runtime: node
+    rootDir: web_dashboard/backend
+    buildCommand: npm install
+    startCommand: npm start
     plan: free
     region: oregon
     healthCheckPath: /health

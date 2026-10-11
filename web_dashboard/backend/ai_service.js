@@ -1,37 +1,119 @@
 /**
  * ╔═══════════════════════════════════════════════════════════╗
- * ║  ai_service.js — YOLO Truck Classification (Local)       ║
- * ║  Calls yolo_infer.py via child_process                   ║
+ * ║  ai_service.js — YOLO Truck Classification               ║
+ * ║  1. Direct Roboflow Workflow API via HTTP (fast & cloud)  ║
+ * ║  2. Local Python fallback via yolo_infer.py               ║
  * ║  Classes: Mining Truck | Full Load | Empty Load           ║
  * ╚═══════════════════════════════════════════════════════════╝
  */
 
-const { spawn } = require("child_process");
+const axios = require("axios");
+const fs = require("fs");
 const path = require("path");
+const { spawn } = require("child_process");
 
-const PYTHON      = process.env.PYTHON_PATH || (process.platform === "win32" ? "python" : "python3");
+const ROBOFLOW_URL = "https://serverless.roboflow.com/aruns-workspace-6uoks/workflows/truck-load-astra-detection";
+const ROBOFLOW_API_KEY = process.env.ROBOFLOW_API_KEY || "XqNmpHgIL0PjdJOQucVY";
+
+const PYTHON = process.env.PYTHON_PATH || (process.platform === "win32" ? "python" : "python3");
 const INFER_SCRIPT = path.join(__dirname, "yolo_infer.py");
 
 /**
- * Classify a truck image using the local YOLO best.pt model.
- * @param {string} imagePath - Absolute path to the downloaded image on disk
- * @returns {Promise<{classification, confidence, reason, raw_class, error}>}
+ * Format raw class and confidence into dashboard-ready response
  */
-function classifyTruckImage(imagePath) {
+function formatDetectionResult(bestClass, bestConf) {
+  let classification = "Mining Truck";
+  let reason = "";
+
+  if (!bestClass || bestConf < 0.20) {
+    classification = "Mining Truck";
+    reason = "No truck or load detected with sufficient confidence. Truck may be a generic mining vehicle.";
+  } else if (bestClass.toLowerCase().includes("overload") || bestClass.toLowerCase().includes("full")) {
+    classification = "Overloaded";
+    reason = `Truck bed detected as overloaded (${(bestConf * 100).toFixed(1)}% confidence). Load exceeds safe limits.`;
+  } else if (bestClass.toLowerCase().includes("normal") || bestClass.toLowerCase().includes("empty")) {
+    classification = "Empty Load";
+    reason = `Truck bed detected as empty (${(bestConf * 100).toFixed(1)}% confidence). No material in dump bed.`;
+  } else {
+    classification = "Mining Truck";
+    reason = `Detected class '${bestClass}' at ${(bestConf * 100).toFixed(1)}% — classified as general mining truck.`;
+  }
+
+  return {
+    classification,
+    confidence: parseFloat(bestConf.toFixed(4)),
+    reason,
+    raw_class: bestClass || "none",
+    error: null,
+  };
+}
+
+/**
+ * Direct HTTP call to Roboflow Serverless API (no Python dependency needed).
+ */
+async function classifyViaHttp(imagePath) {
+  const imageBase64 = fs.readFileSync(imagePath).toString("base64");
+  const response = await axios.post(
+    ROBOFLOW_URL,
+    {
+      inputs: {
+        image: { type: "base64", value: imageBase64 },
+        confidence: 0.4,
+        iou_threshold: 0.3,
+        class_agnostic_nms: false,
+        max_detections: 1000,
+      },
+      use_cache: true,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${ROBOFLOW_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 30000,
+    }
+  );
+
+  const result = response.data;
+  let bestClass = null;
+  let bestConf = 0.0;
+
+  if (Array.isArray(result.outputs) && result.outputs.length > 0) {
+    const resDict = result.outputs[0];
+    const preds = resDict?.predictions?.predictions;
+    if (Array.isArray(preds)) {
+      for (const p of preds) {
+        const conf = p.confidence || 0;
+        const clsName = p.class || "unknown";
+        if (conf > bestConf) {
+          bestConf = conf;
+          bestClass = clsName;
+        }
+      }
+    }
+  }
+
+  return formatDetectionResult(bestClass, bestConf);
+}
+
+/**
+ * Local Python fallback using yolo_infer.py
+ */
+function classifyViaPython(imagePath) {
   return new Promise((resolve) => {
     let stdout = "";
     let stderr = "";
 
     const proc = spawn(PYTHON, [INFER_SCRIPT, imagePath], {
       cwd: __dirname,
-      timeout: 60000,  // 60s max
+      timeout: 60000,
     });
 
     proc.stdout.on("data", (d) => { stdout += d.toString(); });
     proc.stderr.on("data", (d) => { stderr += d.toString(); });
 
     proc.on("error", (err) => {
-      console.error("[YOLO] Spawn error:", err.message);
+      console.error("[YOLO Python] Spawn error:", err.message);
       resolve({
         classification: "Mining Truck",
         confidence: 0,
@@ -42,24 +124,12 @@ function classifyTruckImage(imagePath) {
     });
 
     proc.on("close", (code) => {
-      if (stderr) {
-        // Filter out ultralytics progress noise but show real errors
-        const realErrors = stderr.split("\n").filter(
-          (l) => l.trim() && !l.includes("Ultralytics") && !l.includes("YOLO") && !l.includes("speed:")
-        );
-        if (realErrors.length > 0) {
-          console.error("[YOLO] stderr:", realErrors.join("\n"));
-        }
-      }
-
       try {
-        // Find the last JSON line in stdout (YOLO may print extra lines)
         const lines = stdout.trim().split("\n").filter((l) => l.trim().startsWith("{"));
         if (lines.length === 0) throw new Error("No JSON output from yolo_infer.py");
         const parsed = JSON.parse(lines[lines.length - 1]);
 
         if (parsed.error) {
-          console.error("[YOLO] Inference error:", parsed.error);
           resolve({
             classification: "Mining Truck",
             confidence: 0,
@@ -70,14 +140,13 @@ function classifyTruckImage(imagePath) {
         } else {
           resolve({
             classification: parsed.classification,
-            confidence:     parseFloat(parsed.confidence) || 0,
-            reason:         parsed.reason,
-            raw_class:      parsed.raw_class || "unknown",
-            error:          null,
+            confidence: parseFloat(parsed.confidence) || 0,
+            reason: parsed.reason,
+            raw_class: parsed.raw_class || "unknown",
+            error: null,
           });
         }
       } catch (parseErr) {
-        console.error("[YOLO] JSON parse error:", parseErr.message, "\nOutput was:", stdout);
         resolve({
           classification: "Mining Truck",
           confidence: 0,
@@ -88,6 +157,28 @@ function classifyTruckImage(imagePath) {
       }
     });
   });
+}
+
+/**
+ * Primary entry point: tries direct HTTP first (fast, pure Node.js), falls back to Python.
+ */
+async function classifyTruckImage(imagePath) {
+  try {
+    return await classifyViaHttp(imagePath);
+  } catch (httpErr) {
+    console.warn("[AI Service] HTTP call failed, trying local Python fallback:", httpErr.message);
+    try {
+      return await classifyViaPython(imagePath);
+    } catch (pyErr) {
+      return {
+        classification: "Mining Truck",
+        confidence: 0,
+        reason: "Inference failed: " + (httpErr.message || pyErr.message),
+        raw_class: "error",
+        error: httpErr.message,
+      };
+    }
+  }
 }
 
 module.exports = { classifyTruckImage };
